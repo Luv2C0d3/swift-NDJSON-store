@@ -3,24 +3,29 @@ import PackageDescription
 
 let package = Package(
     name: "NDJSONStore",
-    platforms: [
-        .macOS(.v10_15)
-    ],
+    platforms: [.macOS(.v12)],
     products: [
-        .library(
-            name: "NDJSONStore",
-            targets: ["NDJSONStore"]
-        ),
+        .library(name: "NDJSONStore", targets: ["NDJSONStore"])
     ],
-    dependencies: [],
     targets: [
         .target(
             name: "NDJSONStore",
-            dependencies: []
+            path: "Sources/NDJSONStore"
         ),
         .testTarget(
             name: "NDJSONStoreTests",
-            dependencies: ["NDJSONStore"]
+            dependencies: ["NDJSONStore"],
+            path: "Tests/NDJSONStoreTests"
         ),
+        .testTarget(
+            name: "ExampleClientsTests",
+            dependencies: ["NDJSONStore"],
+            path: "Tests/ExampleClientsTests"
+        ),
+        // .testTarget(
+        //     name: "ExamplesTokensTests",
+        //     dependencies: ["NDJSONStore"],
+        //     path: "Tests/ExamplesTokensTests"
+        // )
     ]
 )

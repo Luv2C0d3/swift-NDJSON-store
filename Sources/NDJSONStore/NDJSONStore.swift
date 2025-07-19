@@ -37,23 +37,35 @@ public final class NDJSONStore<K: Hashable, V: Codable & NDJSONIdentifiable> {
         try? writer.write(value)
     }
 
-    public func close() {
-        // For now, no-op. Placeholder for future flush or locking if needed.
+    public func close() throws {
+        try writer.close()
+
+    }
+
+    deinit {
+        try? close()
     }
 }
 
 // MARK: - Internal: NDJSON Encoder
 
 struct NDJSONEncoder {
-    private let encoder = JSONEncoder()
+    private let encoder: JSONEncoder
+
+    init() {
+        encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+    }
 
     func serialize<T: Encodable>(_ value: T) throws -> String {
         let data = try encoder.encode(value)
         guard let string = String(data: data, encoding: .utf8) else {
-            throw EncodingError.invalidValue(value, EncodingError.Context(
-                codingPath: [],
-                debugDescription: "Failed to encode string from JSON"
-            ))
+            throw EncodingError.invalidValue(
+                value,
+                EncodingError.Context(
+                    codingPath: [],
+                    debugDescription: "Failed to encode string from JSON"
+                ))
         }
         return string
     }
@@ -62,7 +74,12 @@ struct NDJSONEncoder {
 // MARK: - Internal: NDJSON Decoder
 
 struct NDJSONDecoder {
-    private let decoder = JSONDecoder()
+    private let decoder: JSONDecoder
+
+    init() {
+        decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+    }
 
     func decodeLine<T: Decodable>(_ line: String) throws -> T {
         guard let data = line.data(using: .utf8) else {
@@ -115,8 +132,13 @@ final class NDJSONFileWriter {
         fileHandle.seekToEndOfFile()
     }
 
+    func close() throws {
+        try fileHandle.synchronize()  // flush OS buffers to disk
+        try fileHandle.close()  // close the file handle
+    }
+
     deinit {
-        try? fileHandle.close()
+        try? close()
     }
 
     func write<T: Encodable>(_ value: T) throws {
@@ -125,4 +147,3 @@ final class NDJSONFileWriter {
         fileHandle.write(data)
     }
 }
-

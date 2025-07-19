@@ -17,7 +17,7 @@ final class NDJSONStoreTests: XCTestCase {
         let c2 = store.get("abc123")
         XCTAssertEqual(c1.client_id, c2?.client_id)
 
-        store.close()
+        try? store.close()
     }
 }
 
