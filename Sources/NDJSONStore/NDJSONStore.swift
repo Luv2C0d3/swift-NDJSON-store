@@ -37,9 +37,12 @@ public final class NDJSONStore<K: Hashable, V: Codable & NDJSONIdentifiable> {
         try? writer.write(value)
     }
 
+    public func flush() throws {
+        try writer.flush()
+    }
+
     public func close() throws {
         try writer.close()
-
     }
 
     deinit {
@@ -105,13 +108,22 @@ final class NDJSONFileReader {
         let decoder = NDJSONDecoder()
 
         let content = try String(contentsOf: fileURL, encoding: .utf8)
-        for line in content.split(separator: "\n") {
+        for (index, line) in content.split(separator: "\n").enumerated() {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             guard !trimmed.isEmpty else { continue }
 
-            let object: T = try decoder.decodeLine(String(trimmed))
-            let key = keyExtractor(object)
-            result[key] = object
+            do {
+                let object: T = try decoder.decodeLine(String(trimmed))
+                let key = keyExtractor(object)
+                result[key] = object
+            } catch {
+                throw NSError(
+                    domain: "NDJSONFileReader", code: 1,
+                    userInfo: [
+                        NSLocalizedDescriptionKey:
+                            "Failed to decode line \(index + 1): \(error)\nLine content: \(trimmed)"
+                    ])
+            }
         }
 
         return result
@@ -130,6 +142,10 @@ final class NDJSONFileWriter {
         }
         self.fileHandle = handle
         fileHandle.seekToEndOfFile()
+    }
+
+    func flush() throws {
+        try fileHandle.synchronize()  // flush OS buffers to disk
     }
 
     func close() throws {

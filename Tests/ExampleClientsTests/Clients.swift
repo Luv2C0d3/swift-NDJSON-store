@@ -7,8 +7,8 @@ public class Clients {
     public init(fileURL: URL) throws {
         self.store = NDJSONStore<String, Client>(
             fileURL: fileURL,
-            keyExtractor: { $0.clientID }
-        )    
+            keyExtractor: { $0.clientId }
+        )
     }
 
     public func get(_ id: String) -> Client? {
@@ -17,5 +17,12 @@ public class Clients {
 
     public func set(_ client: Client) throws {
         store.set(client)
+    }
+    public func flush() throws {
+        try? store.flush()
+    }
+
+    public func close() {
+        try? store.close()
     }
 }
