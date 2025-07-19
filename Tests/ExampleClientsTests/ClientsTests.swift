@@ -61,4 +61,102 @@ final class ClientsTests: XCTestCase {
         }
     }
 
+    func testNDJSONStoreWritePerformance() throws {
+        let totalClients = 10_000
+
+        measure(
+            metrics: [XCTClockMetric()],
+            block: {
+                // Write phase
+                for i in 1...totalClients {
+                    let client = Client(
+                        clientID: "client-\(i)",
+                        clientSecret: "client-secret-\(i)",
+                        redirectURIs: ["http://example.com"],
+                        scopes: ["read", "write"]
+                    )
+                    try? clients.set(client)
+                }
+                try? clients.flush()
+            })
+
+        var clients2: Clients!
+        // Read phase from a fresh store
+        clients2 = try? Clients(fileURL: tempFileURL)
+
+        // Final pass: correctness check
+        for i in 1...totalClients {
+            let key = "client-\(i)"
+            let original = clients.get(key)
+            let reloaded = clients2.get(key)
+            XCTAssertEqual(original, reloaded, "Mismatch on client with id \(key)")
+        }
+    }
+
+    func testNDJSONStoreReadPerformance() throws {
+        let totalClients = 10_000
+
+        // Write phase
+        for i in 1...totalClients {
+            let client = Client(
+                clientID: "client-\(i)",
+                clientSecret: "client-secret-\(i)",
+                redirectURIs: ["http://example.com"],
+                scopes: ["read", "write"]
+            )
+            try? clients.set(client)
+        }
+        try? clients.flush()
+
+        var clients2: Clients!
+        measure(
+            metrics: [XCTClockMetric()],
+            block: {
+                // Read phase from a fresh store
+                clients2 = try? Clients(fileURL: tempFileURL)
+            })
+
+        // Final pass: correctness check
+        for i in 1...totalClients {
+            let key = "client-\(i)"
+            let original = clients.get(key)
+            let reloaded = clients2.get(key)
+            XCTAssertEqual(original, reloaded, "Mismatch on client with id \(key)")
+        }
+    }
+
+    func testWritePerformance_precise() throws {
+        let totalClients = 100_000
+
+        // Prepare data ahead of time (outside timing block)
+        var sampleClients: [Client] = []
+        for i in 1...totalClients {
+            let client = Client(
+                clientID: "client-\(i)",
+                clientSecret: "client-secret-\(i)",
+                redirectURIs: ["http://example.com"],
+                scopes: ["read", "write"]
+            )
+            sampleClients.append(client)
+        }
+
+        // Measure only the write and flush
+        let start = DispatchTime.now()
+        for client in sampleClients {
+            try clients.set(client)
+        }
+        try clients.flush()
+        let end = DispatchTime.now()
+
+        let elapsed = Double(end.uptimeNanoseconds - start.uptimeNanoseconds)
+        let nsPerOp = elapsed / Double(totalClients)
+        let opsPerSec = 1_000_000_000 / nsPerOp
+
+        print("Write throughput:")
+        print("  Total clients: \(totalClients)")
+        print("  Time elapsed: \(elapsed / 1_000_000) ms")
+        print("  ns/op: \(Int(nsPerOp))")
+        print("  ops/sec: \(Int(opsPerSec))")
+    }
+
 }
