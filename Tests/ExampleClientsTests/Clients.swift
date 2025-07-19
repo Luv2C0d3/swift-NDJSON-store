@@ -7,7 +7,8 @@ public class Clients {
     public init(fileURL: URL) throws {
         self.store = NDJSONStore<String, Client>(
             fileURL: fileURL,
-            keyExtractor: { $0.clientId }
+            keyExtractor: { $0.clientID },
+            useDefaultDecodingStrategy: false
         )
     }
 

@@ -22,12 +22,12 @@ final class ClientsTests: XCTestCase {
 
     func testSetAndGetClient() throws {
         let client = Client(
-            clientId: "client-1", clientSecret: "client-secret-1",
-            redirectUris: ["http://example.com"], scopes: ["read", "write"])
+            clientID: "client-1", clientSecret: "client-secret-1",
+            redirectURIs: ["http://example.com"], scopes: ["read", "write"])
         try clients.set(client)
         let loaded = clients.get("client-1")
         XCTAssertEqual(loaded?.clientSecret, "client-secret-1")
-        XCTAssertEqual(loaded?.redirectUris, ["http://example.com"])
+        XCTAssertEqual(loaded?.redirectURIs, ["http://example.com"])
         XCTAssertEqual(loaded?.scopes, ["read", "write"])
     }
 
@@ -40,9 +40,9 @@ final class ClientsTests: XCTestCase {
         // Write 10 clients to the first store
         for i in 1...10 {
             let client = Client(
-                clientId: "client-\(i)",
+                clientID: "client-\(i)",
                 clientSecret: "client-secret-\(i)",
-                redirectUris: ["http://example.com"],
+                redirectURIs: ["http://example.com"],
                 scopes: ["read", "write"]
             )
             try clients.set(client)

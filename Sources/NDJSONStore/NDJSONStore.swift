@@ -13,16 +13,19 @@ public final class NDJSONStore<K: Hashable, V: Codable & NDJSONIdentifiable> {
     private var keyExtractor: (V) -> K
     private var map: [K: V] = [:]
     private let writer: NDJSONFileWriter
+    private let useDefaultDecodingStrategy: Bool  // <-- Add flag here
 
-    public init(fileURL: URL, keyExtractor: @escaping (V) -> K) {
+    public init(fileURL: URL, keyExtractor: @escaping (V) -> K, useDefaultDecodingStrategy: Bool = true) {
         self.fileURL = fileURL
         self.keyExtractor = keyExtractor
+        self.useDefaultDecodingStrategy = useDefaultDecodingStrategy
 
         if !FileManager.default.fileExists(atPath: fileURL.path) {
             FileManager.default.createFile(atPath: fileURL.path, contents: nil)
         }
 
-        let reader = NDJSONFileReader(fileURL: fileURL)
+        // Pass the flag down to the reader
+        let reader = NDJSONFileReader(fileURL: fileURL, useDefaultDecodingStrategy: useDefaultDecodingStrategy)
         self.map = (try? reader.readAllToDictionary(keyExtractor: keyExtractor)) ?? [:]
         self.writer = NDJSONFileWriter(fileURL: fileURL)
     }
@@ -79,9 +82,13 @@ struct NDJSONEncoder {
 struct NDJSONDecoder {
     private let decoder: JSONDecoder
 
-    init() {
+    init(useDefaultDecodingStrategy: Bool = true) {
         decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        if useDefaultDecodingStrategy {
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+        } else {
+            decoder.keyDecodingStrategy = .useDefaultKeys
+        }
     }
 
     func decodeLine<T: Decodable>(_ line: String) throws -> T {
@@ -98,14 +105,16 @@ struct NDJSONDecoder {
 
 final class NDJSONFileReader {
     private let fileURL: URL
+    private let useDefaultDecodingStrategy: Bool  // <-- add flag
 
-    init(fileURL: URL) {
+    init(fileURL: URL, useDefaultDecodingStrategy: Bool = true) {
         self.fileURL = fileURL
+        self.useDefaultDecodingStrategy = useDefaultDecodingStrategy
     }
 
     func readAllToDictionary<T: Decodable, K: Hashable>(keyExtractor: (T) -> K) throws -> [K: T] {
         var result: [K: T] = [:]
-        let decoder = NDJSONDecoder()
+        let decoder = NDJSONDecoder(useDefaultDecodingStrategy: useDefaultDecodingStrategy) // pass flag here
 
         let content = try String(contentsOf: fileURL, encoding: .utf8)
         for (index, line) in content.split(separator: "\n").enumerated() {
