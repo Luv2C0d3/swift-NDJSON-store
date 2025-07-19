@@ -22,10 +22,10 @@ let package = Package(
             dependencies: ["NDJSONStore"],
             path: "Tests/ExampleClientsTests"
         ),
-        // .testTarget(
-        //     name: "ExamplesTokensTests",
-        //     dependencies: ["NDJSONStore"],
-        //     path: "Tests/ExamplesTokensTests"
-        // )
+        .testTarget(
+            name: "ExampleTokensTests",
+            dependencies: ["NDJSONStore"],
+            path: "Tests/ExampleTokensTests"
+        )
     ]
 )
