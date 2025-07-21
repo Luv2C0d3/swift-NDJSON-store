@@ -64,21 +64,20 @@ final class ClientsTests: XCTestCase {
     func testNDJSONStoreWritePerformance() throws {
         let totalClients = 10_000
 
-        measure(
-            metrics: [XCTClockMetric()],
-            block: {
-                // Write phase
-                for i in 1...totalClients {
-                    let client = Client(
-                        clientID: "client-\(i)",
-                        clientSecret: "client-secret-\(i)",
-                        redirectURIs: ["http://example.com"],
-                        scopes: ["read", "write"]
-                    )
-                    try? clients.set(client)
-                }
-                try? clients.flush()
-            })
+        measure {
+
+            // Write phase
+            for i in 1...totalClients {
+                let client = Client(
+                    clientID: "client-\(i)",
+                    clientSecret: "client-secret-\(i)",
+                    redirectURIs: ["http://example.com"],
+                    scopes: ["read", "write"]
+                )
+                try? clients.set(client)
+            }
+            try? clients.flush()
+        }
 
         var clients2: Clients!
         // Read phase from a fresh store
@@ -109,12 +108,10 @@ final class ClientsTests: XCTestCase {
         try? clients.flush()
 
         var clients2: Clients!
-        measure(
-            metrics: [XCTClockMetric()],
-            block: {
-                // Read phase from a fresh store
-                clients2 = try? Clients(fileURL: tempFileURL)
-            })
+        measure {
+            // Read phase from a fresh store
+            clients2 = try? Clients(fileURL: tempFileURL)
+        }
 
         // Final pass: correctness check
         for i in 1...totalClients {

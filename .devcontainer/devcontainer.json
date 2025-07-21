@@ -1,0 +1,17 @@
+{
+  "name": "Swift Dev Container",
+  "image": "swift:6.1.2",
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": [
+        "vknabel.vscode-swift-development-environment"
+      ]
+    }
+  },
+  "postCreateCommand": "swift build",
+  "mounts": [
+    "source=${localWorkspaceFolder}/.build,target=/root/.build,type=bind"
+  ]
+}
+
