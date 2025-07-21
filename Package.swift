@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "NDJSONStore",
-    platforms: [.macOS(.v12)],
+    platforms: [.macOS(.v10_15)],
     products: [
         .library(name: "NDJSONStore", targets: ["NDJSONStore"])
     ],
