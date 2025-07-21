@@ -61,6 +61,7 @@ struct NDJSONEncoder {
     init() {
         encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
+        encoder.dateEncodingStrategy = .iso8601 // <<--- ADD THIS LINE
     }
 
     func serialize<T: Encodable>(_ value: T) throws -> String {
@@ -84,6 +85,7 @@ struct NDJSONDecoder {
 
     init(useDefaultDecodingStrategy: Bool = true) {
         decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
         if useDefaultDecodingStrategy {
             decoder.keyDecodingStrategy = .convertFromSnakeCase
         } else {
