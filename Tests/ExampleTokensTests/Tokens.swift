@@ -5,24 +5,34 @@ import NDJSONStore // your module where NDJSONStore is defined
 
 public struct AccessToken: Codable, NDJSONIdentifiable, Equatable {
     public let accessToken: String
-    public let expiresIn: Int
+    public let clientID: String
+    public let scope: [String]
+    public let issuedAt: Date
+    public let expiresAt: Date
 
     public var ndjsonKey: String { accessToken }
 
-    public init(accessToken: String, expiresIn: Int) {
+    public init(accessToken: String, clientID: String, scope: [String], issuedAt: Date, expiresAt: Date) {
         self.accessToken = accessToken
-        self.expiresIn = expiresIn
+        self.clientID = clientID
+        self.scope = scope
+        self.issuedAt = issuedAt
+        self.expiresAt = expiresAt
     }
 }
 
 public struct RefreshToken: Codable, NDJSONIdentifiable, Equatable {
     public let refreshToken: String
+    public let clientID: String
+    public let scope: [String]
     public let issuedAt: Date
 
     public var ndjsonKey: String { refreshToken }
 
-    public init(refreshToken: String, issuedAt: Date) {
+    public init(refreshToken: String, clientID: String, scope: [String], issuedAt: Date) {
         self.refreshToken = refreshToken
+        self.clientID = clientID
+        self.scope = scope
         self.issuedAt = issuedAt
     }
 }

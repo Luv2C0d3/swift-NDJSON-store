@@ -11,6 +11,7 @@ final class TokensTests: XCTestCase {
         tempFileURL = tempDir.appendingPathComponent("tokens_test.ndjson")
         // Remove if exists
         try? FileManager.default.removeItem(at: tempFileURL)
+        print("tempFileURL: \(tempFileURL.absoluteString)")
     }
 
     override func tearDownWithError() throws {
@@ -21,8 +22,8 @@ final class TokensTests: XCTestCase {
     func testSetGetTokens() throws {
         let tokens = try Tokens(fileURL: tempFileURL)
 
-        let accessToken = AccessToken(accessToken: "access123", expiresIn: 3600)
-        let refreshToken = RefreshToken(refreshToken: "refreshABC", issuedAt: Date(timeIntervalSince1970: 1_600_000_000))
+        let accessToken = AccessToken(accessToken: "access123", clientID: "client123", scope: ["read", "write"], issuedAt: Date(timeIntervalSince1970: TimeInterval(Int(Date().timeIntervalSince1970))), expiresAt: Date(timeIntervalSince1970: TimeInterval(Int(Date().timeIntervalSince1970) + 3600)))
+        let refreshToken = RefreshToken(refreshToken: "refreshABC", clientID: "client123", scope: ["read", "write"], issuedAt: Date(timeIntervalSince1970: TimeInterval(Int(Date().timeIntervalSince1970))))
 
         // Store tokens
         tokens.set(.access(accessToken))
@@ -52,8 +53,8 @@ final class TokensTests: XCTestCase {
         // Create tokens and store them
         do {
             let tokens = try Tokens(fileURL: tempFileURL)
-            tokens.set(.access(AccessToken(accessToken: "token1", expiresIn: 10)))
-            tokens.set(.refresh(RefreshToken(refreshToken: "token2", issuedAt: Date())))
+            tokens.set(.access(AccessToken(accessToken: "token1", clientID: "client1", scope: ["read", "write"], issuedAt: Date(timeIntervalSince1970: TimeInterval(Int(Date().timeIntervalSince1970))), expiresAt: Date(timeIntervalSince1970: TimeInterval(Int(Date().timeIntervalSince1970) + 10)))))
+            tokens.set(.refresh(RefreshToken(refreshToken: "token2", clientID: "client1", scope: ["read", "write"], issuedAt: Date(timeIntervalSince1970: TimeInterval(Int(Date().timeIntervalSince1970))))))
             tokens.close()
         }
 
@@ -64,5 +65,55 @@ final class TokensTests: XCTestCase {
             XCTAssertNotNil(tokens.get("token1"))
             XCTAssertNotNil(tokens.get("token2"))
         }
+    }
+
+    func testWritePerformance_precise() throws {
+        let totalTokens = 100_000
+        let tokens = try Tokens(fileURL: tempFileURL)
+
+        // Prepare data ahead of time (outside timing block)
+        var sampleTokens: [Token] = []
+        for i in 1...totalTokens {
+            if i % 2 == 0 {
+                // Even numbers are access tokens
+                let accessToken = AccessToken(
+                    accessToken: "access_token_\(i)",
+                    clientID: "client1",
+                    scope: ["read", "write"],
+                    issuedAt: Date(timeIntervalSince1970: TimeInterval(Int(Date().timeIntervalSince1970))),
+                    expiresAt: Date(timeIntervalSince1970: TimeInterval(Int(Date().timeIntervalSince1970) + 3600))
+                )
+                sampleTokens.append(.access(accessToken))
+            } else {
+                // Odd numbers are refresh tokens
+                let refreshToken = RefreshToken(
+                    refreshToken: "refresh_token_\(i)",
+                    clientID: "client1",
+                    scope: ["read", "write"],
+                    issuedAt: Date(timeIntervalSince1970: TimeInterval(Int(Date().timeIntervalSince1970) + i))
+                )
+                sampleTokens.append(.refresh(refreshToken))
+            }
+        }
+
+        // Measure only the write and flush
+        let start = DispatchTime.now()
+        for token in sampleTokens {
+            tokens.set(token)
+        }
+        tokens.close()
+        let end = DispatchTime.now()
+
+        let elapsed = Double(end.uptimeNanoseconds - start.uptimeNanoseconds)
+        let nsPerOp = elapsed / Double(totalTokens)
+        let opsPerSec = 1_000_000_000 / nsPerOp
+
+        print("Token Write throughput:")
+        print("  Total tokens: \(totalTokens)")
+        print("  Access tokens: \(totalTokens / 2)")
+        print("  Refresh tokens: \(totalTokens / 2)")
+        print("  Time elapsed: \(elapsed / 1_000_000) ms")
+        print("  ns/op: \(Int(nsPerOp))")
+        print("  ops/sec: \(Int(opsPerSec))")
     }
 }
